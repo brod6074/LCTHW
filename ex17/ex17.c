@@ -53,8 +53,20 @@ void Address_print(struct Address* addr)
 
 void Database_load(struct Connection* conn)
 {
-    int rc = fread(conn->db, sizeof(struct Database), 1, conn->file);
+    int rc = fread(&conn->db->maxRows, sizeof(int), 1, conn->file);
     if (rc != 1) {
+        die("Failed to load database size.", conn);
+    }
+
+    fseek(conn->file, sizeof(int), SEEK_SET);
+
+    conn->db->rows = malloc(sizeof(struct Address) * conn->db->maxRows);
+    if (!conn->db->rows) {
+        die("Memory allocation error\n", conn);
+    }
+
+    rc = fread(conn->db->rows, sizeof(struct Address), conn->db->maxRows, conn->file);
+    if (rc != conn->db->maxRows) {
         die("Failed to load database.", conn);
     }
 }
@@ -183,7 +195,7 @@ void Database_list(struct Connection* conn)
     int i = 0;
     struct Database* db = conn->db;
 
-    for(i = 0; i < conn->db->maxRows; i++) {
+    for(i = 0; i < db->maxRows; i++) {
         struct Address* cur = &db->rows[i];
 
         if(cur->set) {
@@ -198,6 +210,7 @@ int main(int argc, char* argv[])
 
     char* filename = argv[1];
     char action = argv[2][0];
+    printf("Entering Database_open\n");
     struct Connection* conn = Database_open(filename, action);
     int id = 0;
 
@@ -242,7 +255,9 @@ int main(int argc, char* argv[])
                 die("There's not that many records.", conn);
             }
 
+            printf("Entering Database_set\n");
             Database_set(conn, id, argv[4], argv[5]);
+            printf("Entering Database_write\n");
             Database_write(conn);
             break;
 
