@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <string.h>
 
-#define MAX_DATA 16
+#define MAX_DATA 32
 
 struct Address {
     int id;
@@ -186,7 +186,9 @@ void Database_list(struct Connection* conn) {
 }
 
 int main(int argc, char* argv[]) {
-    if(argc < 3) die("USAGE: ex17 <dbfile> <action> [action params]", NULL);
+    if(argc < 3) {
+        die("USAGE: ex17 <dbfile> <action> [action params]", NULL);
+    }
 
     char* filename = argv[1];
     char action = argv[2][0];
