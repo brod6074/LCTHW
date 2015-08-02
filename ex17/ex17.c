@@ -55,13 +55,14 @@ void Address_print(struct Address* addr) {
 }
 
 void Database_load(struct Connection* conn) {
+    // Read the database size first
     int rc = fread(&conn->db->maxRows, sizeof(int), 1, conn->file);
     if (rc != 1) {
         die("Failed to load database size.", conn);
     }
 
+    // Now read in the data
     fseek(conn->file, sizeof(int), SEEK_SET);
-
     conn->db->rows = malloc(sizeof(struct Address) * conn->db->maxRows);
     if (!conn->db->rows) {
         die("Memory allocation error\n", conn);
@@ -114,11 +115,6 @@ void Database_write(struct Connection* conn) {
 
     fseek(conn->file, sizeof(int), SEEK_SET);
 
-    int i = 0;
-    for (i = 0; i < conn->db->maxRows; i++) {
-        Address_print(&conn->db->rows[i]);
-    }
-
     // Write the rest of the database
     rc = fwrite(conn->db->rows, sizeof(struct Address), conn->db->maxRows, conn->file);
     if (rc != conn->db->maxRows) {
@@ -141,9 +137,7 @@ void Database_create(struct Connection* conn, int size) {
 
     int i = 0;
     for(i = 0; i < size; i++) {
-        // make a prototype to initialize it
-        struct Address addr = {.id = i, .set = 0, .name = "abcdefg", .email = "ABCDEFG"};
-        // then just assign it
+        struct Address addr = {.id = i, .set = 0};
         conn->db->rows[i] = addr;
     }
 
