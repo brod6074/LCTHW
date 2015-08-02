@@ -23,17 +23,22 @@ struct Connection {
     struct Database* db;
 };
 
-void Database_close(struct Connection* conn)
-{
-    if(conn) {
-        if(conn->file) fclose(conn->file);
-        if(conn->db) free(conn->db);
+void Database_close(struct Connection* conn) {
+    if (conn) {
+        if (conn->file) {
+            fclose(conn->file);
+        }
+        if (conn->db->rows) {
+            free(conn->db->rows);
+        }
+        if (conn->db) {
+            free(conn->db);
+        }
         free(conn);
     }
 }
 
-void die(const char* message, struct Connection* conn)
-{
+void die(const char* message, struct Connection* conn) {
     if(errno) {
         perror(message);
     } else {
@@ -41,18 +46,15 @@ void die(const char* message, struct Connection* conn)
     }
 
     Database_close(conn);
-
     exit(1);
 }
 
-void Address_print(struct Address* addr)
-{
+void Address_print(struct Address* addr) {
     printf("%d %s %s\n",
             addr->id, addr->name, addr->email);
 }
 
-void Database_load(struct Connection* conn)
-{
+void Database_load(struct Connection* conn) {
     int rc = fread(&conn->db->maxRows, sizeof(int), 1, conn->file);
     if (rc != 1) {
         die("Failed to load database size.", conn);
@@ -71,8 +73,7 @@ void Database_load(struct Connection* conn)
     }
 }
 
-struct Connection* Database_open(const char* filename, char mode)
-{
+struct Connection* Database_open(const char* filename, char mode) {
     struct Connection* conn = malloc(sizeof(struct Connection));
     if (!conn) {
         die("Memory error", conn);
@@ -99,16 +100,11 @@ struct Connection* Database_open(const char* filename, char mode)
         die("Failed to open the file", conn);
     }
 
-    printf("Returning from Database_open\n");
-
     return conn;
 }
 
-void Database_write(struct Connection* conn)
-{
+void Database_write(struct Connection* conn) {
     rewind(conn->file);
-
-    printf("maxRows is %d\n", conn->db->maxRows);
 
     // Write the number of rows first
     int rc = fwrite(&conn->db->maxRows, sizeof(int), 1, conn->file);
@@ -135,10 +131,8 @@ void Database_write(struct Connection* conn)
     }
 }
 
-void Database_create(struct Connection* conn, int size)
-{
+void Database_create(struct Connection* conn, int size) {
     conn->db->maxRows = size;
-    printf("The size is %d\n", size);
 
     conn->db->rows = malloc(sizeof(struct Address) * size);
     if (!conn->db->rows) {
@@ -153,18 +147,14 @@ void Database_create(struct Connection* conn, int size)
         conn->db->rows[i] = addr;
     }
 
-    printf("Returning from Database_create\n");
 }
 
-void Database_set(struct Connection* conn, int id, const char* name, const char* email)
-{
+void Database_set(struct Connection* conn, int id, const char* name, const char* email) {
     struct Address* addr = &conn->db->rows[id];
     if(addr->set) die("Already set, delete it first", conn);
 
     addr->set = 1;
-    // WARNING: bug, read the "How To Break It" and fix this
     char* res = strncpy(addr->name, name, MAX_DATA - 1);
-    // demonstrate the strncpy bug
     if(!res) die("Name copy failed", conn);
     res[MAX_DATA-1] = '\0';
 
@@ -173,8 +163,7 @@ void Database_set(struct Connection* conn, int id, const char* name, const char*
     res[MAX_DATA-1] = '\0';
 }
 
-void Database_get(struct Connection* conn, int id)
-{
+void Database_get(struct Connection* conn, int id) {
     struct Address* addr = &conn->db->rows[id];
 
     if(addr->set) {
@@ -184,14 +173,12 @@ void Database_get(struct Connection* conn, int id)
     }
 }
 
-void Database_delete(struct Connection* conn, int id)
-{
+void Database_delete(struct Connection* conn, int id) {
     struct Address addr = {.id = id, .set = 0};
     conn->db->rows[id] = addr;
 }
 
-void Database_list(struct Connection* conn)
-{
+void Database_list(struct Connection* conn) {
     int i = 0;
     struct Database* db = conn->db;
 
@@ -204,13 +191,11 @@ void Database_list(struct Connection* conn)
     }
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     if(argc < 3) die("USAGE: ex17 <dbfile> <action> [action params]", NULL);
 
     char* filename = argv[1];
     char action = argv[2][0];
-    printf("Entering Database_open\n");
     struct Connection* conn = Database_open(filename, action);
     int id = 0;
 
@@ -229,7 +214,6 @@ int main(int argc, char* argv[])
                 die("The database size must be a positive size", conn);
             }
 
-            printf("Entering Database_create\n");
             Database_create(conn, id);
             Database_write(conn);
             break;
@@ -255,9 +239,7 @@ int main(int argc, char* argv[])
                 die("There's not that many records.", conn);
             }
 
-            printf("Entering Database_set\n");
             Database_set(conn, id, argv[4], argv[5]);
-            printf("Entering Database_write\n");
             Database_write(conn);
             break;
 
@@ -282,6 +264,5 @@ int main(int argc, char* argv[])
     }
 
     Database_close(conn);
-
     return 0;
 }
