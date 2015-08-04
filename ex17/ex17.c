@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define MAX_DATA 32
+#define DEFAULT_ROWS 10
 
 struct Address {
     int id;
@@ -194,23 +195,29 @@ int main(int argc, char* argv[]) {
     char action = argv[2][0];
     struct Connection* conn = Database_open(filename, action);
     int id = 0;
+    int size = 0;
 
-    // Get the <action> command
     if (argc > 3) {
         id = atoi(argv[3]);
     }
 
     switch(action) {
         case 'c':
-            if (argc != 4) {
-                die("Need a size to create the database", conn);
+            if (argc == 3) {
+                size = DEFAULT_ROWS;
+            } else if (argc == 4) {
+                printf("Trying to call atoi\n");
+                size = atoi(argv[3]);
+                printf("The size is %d\n", size);
+            } else {
+                die("CREATE USAGE: ex17 <dbfile> c [optional size]", conn);
             }
 
-            if (id < 1) {
+            if (size < 1) {
                 die("The database size must be a positive size", conn);
             }
 
-            Database_create(conn, id);
+            Database_create(conn, size);
             Database_write(conn);
             break;
 
