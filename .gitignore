@@ -1,7 +1,5 @@
 .DS*
 *.dat
 *.o
-ex17
-ex18
 *.sublime*
 *.dSYM
